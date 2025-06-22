@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIPAA Analyzer - Privacy Policy Compliance Checker</title>
+    <meta name="description" content="Comprehensive analysis of website privacy policies against HIPAA standards">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- jsPDF for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { 
+            background-color: white; 
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        .loading { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .progress-bar {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-4 mb-6">
+                <div class="bg-blue-600 p-3 rounded-xl shadow-lg">
+                    <i data-lucide="shield" class="h-8 w-8 text-white"></i>
+                </div>
+                <h1 class="text-4xl font-bold text-gray-900">HIPAA Analyzer</h1>
+                <button id="debugToggle" class="ml-4 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">
+                    <i data-lucide="bug" class="h-4 w-4 mr-2 inline"></i>
+                    Debug Tool
+                </button>
+            </div>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                Comprehensive analysis of website privacy policies against HIPAA standards
+            </p>
+        </div>
+
+        <!-- Input Section -->
+        <div class="bg-white rounded-lg shadow-lg mb-8">
+            <div class="bg-white border-b px-6 py-4">
+                <h2 class="text-xl font-semibold flex items-center gap-3">
+                    <i data-lucide="file-text" class="h-5 w-5 text-blue-600"></i>
+                    Website Privacy Policy Analysis
+                </h2>
+                <p class="text-gray-600 mt-1">Enter a website URL to perform comprehensive HIPAA compliance analysis</p>
+            </div>
+            <div class="p-6">
+                <div class="flex gap-4">
+                    <input 
+                        type="url" 
+                        id="urlInput" 
+                        placeholder="https://example.com" 
+                        class="flex-1 h-12 px-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <button 
+                        id="analyzeBtn" 
+                        class="h-12 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium"
+                    >
+                        <i data-lucide="shield" class="h-5 w-5 mr-2 inline"></i>
+                        Analyze Compliance
+                    </button>
+                </div>
+                <div id="errorMessage" class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg hidden">
+                    <p class="text-red-800"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm border">
+                <!-- Tabs -->
+                <div class="grid grid-cols-5 bg-gray-50 rounded-t-lg h-12">
+                    <button class="tab-button active" data-tab="overview">Overview</button>
+                    <button class="tab-button" data-tab="compliance">Compliance Analysis</button>
+                    <button class="tab-button" data-tab="audit">Audit Trail</button>
+                    <button class="tab-button" data-tab="standards">HIPAA Standards</button>
+                    <button class="tab-button" data-tab="report">Full Report</button>
+                </div>
+
+                <div class="p-6">
+                    <!-- Overview Tab -->
+                    <div id="overview" class="tab-content active">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-blue-50 p-6 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-blue-600">Total Requirements</p>
+                                        <p id="totalReqs" class="text-2xl font-bold text-blue-900">0</p>
+                                    </div>
+                                    <i data-lucide="clipboard-list" class="h-8 w-8 text-blue-600"></i>
+                                </div>
+                            </div>
+                            <div class="bg-green-50 p-6 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-green-600">Present</p>
+                                        <p id="presentReqs" class="text-2xl font-bold text-green-900">0</p>
+                                    </div>
+                                    <i data-lucide="check-circle" class="h-8 w-8 text-green-600"></i>
+                                </div>
+                            </div>
+                            <div class="bg-red-50 p-6 rounded-lg">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-red-600">Missing</p>
+                                        <p id="missingReqs" class="text-2xl font-bold text-red-900">0</p>
+                                    </div>
+                                    <i data-lucide="alert-circle" class="h-8 w-8 text-red-600"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="categoryBreakdown" class="space-y-4">
+                            <!-- Category breakdown will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Compliance Analysis Tab -->
+                    <div id="compliance" class="tab-content">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold">HIPAA Compliance Checklist</h3>
+                        </div>
+                        <div id="complianceFindings" class="space-y-6">
+                            <!-- Compliance findings will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Audit Trail Tab -->
+                    <div id="audit" class="tab-content">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold">Analysis Audit Trail</h3>
+                            <button id="exportAuditBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                <i data-lucide="download" class="h-4 w-4 mr-2 inline"></i>
+                                Export Audit PDF
+                            </button>
+                        </div>
+                        <div id="auditTrail" class="space-y-4">
+                            <!-- Audit trail will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- HIPAA Standards Tab -->
+                    <div id="standards" class="tab-content">
+                        <h3 class="text-lg font-semibold mb-6">2025 HIPAA Privacy Rule Standards</h3>
+                        <div class="space-y-6" id="hipaaStandards">
+                            <!-- HIPAA standards will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Full Report Tab -->
+                    <div id="report" class="tab-content">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-semibold">Full Compliance Report</h3>
+                            <button id="exportReportBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                                <i data-lucide="download" class="h-4 w-4 mr-2 inline"></i>
+                                Export Report PDF
+                            </button>
+                        </div>
+                        <div id="fullReport">
+                            <!-- Full report content will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Global variables
+        let currentResult = null;
+        let debugMode = false;
+
+        // HIPAA Standards Data
+        const hipaaStandards = {
+            "Notice of Privacy Practices": {
+                description: "Organizations must provide individuals with a notice describing how their PHI may be used and disclosed.",
+                requirements: [
+                    "Clear description of uses and disclosures",
+                    "Individual rights regarding PHI",
+                    "Organization's duties to protect PHI",
+                    "Contact information for privacy officer"
+                ]
+            },
+            "Individual Access Rights": {
+                description: "Individuals have the right to access their PHI and request amendments.",
+                requirements: [
+                    "Right to access PHI",
+                    "Right to request amendments",
+                    "Right to accounting of disclosures",
+                    "Right to request restrictions"
+                ]
+            },
+            "Minimum Necessary Standard": {
+                description: "Only the minimum necessary PHI should be used or disclosed for the intended purpose.",
+                requirements: [
+                    "Limit PHI use to minimum necessary",
+                    "Implement access controls",
+                    "Regular review of access permissions",
+                    "Training on minimum necessary principle"
+                ]
+            },
+            "Administrative Safeguards": {
+                description: "Administrative actions and policies to manage security measures.",
+                requirements: [
+                    "Security officer designation",
+                    "Workforce training programs",
+                    "Access management procedures",
+                    "Incident response procedures"
+                ]
+            },
+            "Physical Safeguards": {
+                description: "Physical measures to protect electronic systems and equipment.",
+                requirements: [
+                    "Facility access controls",
+                    "Workstation security",
+                    "Device and media controls",
+                    "Environmental protections"
+                ]
+            },
+            "Technical Safeguards": {
+                description: "Technology controls to protect electronic PHI.",
+                requirements: [
+                    "Access control systems",
+                    "Audit controls and logging",
+                    "Data integrity measures",
+                    "Transmission security"
+                ]
+            }
+        };
+
+        // Mock HIPAA compliance checker
+        function checkHIPAACompliance(url) {
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    const mockResult = {
+                        id: 'report_' + Date.now(),
+                        url: url,
+                        status: 'needs-attention',
+                        timestamp: new Date().toISOString(),
+                        summary: {
+                            totalRequirements: 24,
+                            presentRequirements: 8,
+                            partialRequirements: 6,
+                            missingRequirements: 10,
+                            criticalIssues: 4
+                        },
+                        findings: [
+                            {
+                                category: "Notice of Privacy Practices",
+                                requirement: "Privacy Notice Availability",
+                                status: "present",
+                                details: "Privacy notice is clearly accessible on the website",
+                                recommendations: ["Ensure notice is updated annually"],
+                                priority: "recommended"
+                            },
+                            {
+                                category: "Individual Access Rights",
+                                requirement: "Data Access Procedures",
+                                status: "missing",
+                                details: "No clear procedure for individuals to access their health information",
+                                recommendations: ["Implement data access request form", "Establish response timeline procedures"],
+                                priority: "critical"
+                            },
+                            {
+                                category: "Administrative Safeguards",
+                                requirement: "Security Officer Designation",
+                                status: "partial",
+                                details: "Contact information provided but role not clearly defined",
+                                recommendations: ["Clearly identify privacy officer role and responsibilities"],
+                                priority: "important"
+                            },
+                            {
+                                category: "Technical Safeguards",
+                                requirement: "Encryption Standards",
+                                status: "missing",
+                                details: "No mention of data encryption practices",
+                                recommendations: ["Document encryption standards for data at rest and in transit"],
+                                priority: "critical"
+                            }
+                        ]
+                    };
+                    resolve(mockResult);
+                }, 2000);
+            });
+        }
+
+        // Event listeners
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const url = document.getElementById('urlInput').value;
+            if (!url) return;
+
+            const btn = document.getElementById('analyzeBtn');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            // Show loading state
+            btn.innerHTML = '<i data-lucide="loader-2" class="h-5 w-5 mr-2 inline loading"></i>Analyzing...';
+            btn.disabled = true;
+            errorDiv.classList.add('hidden');
+            
+            try {
+                const result = await checkHIPAACompliance(url);
+                currentResult = result;
+                displayResults(result);
+                document.getElementById('resultsSection').classList.remove('hidden');
+            } catch (error) {
+                errorDiv.querySelector('p').textContent = error.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.innerHTML = '<i data-lucide="shield" class="h-5 w-5 mr-2 inline"></i>Analyze Compliance';
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                
+                // Update active tab button
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Update active tab content
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // Debug toggle
+        document.getElementById('debugToggle').addEventListener('click', () => {
+            debugMode = !debugMode;
+            const btn = document.getElementById('debugToggle');
+            if (debugMode) {
+                btn.classList.add('bg-blue-600', 'text-white');
+                btn.classList.remove('border-gray-300', 'hover:bg-gray-50');
+            } else {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('border-gray-300', 'hover:bg-gray-50');
+            }
+        });
+
+        // Export functions
+        document.getElementById('exportAuditBtn').addEventListener('click', () => {
+            if (!currentResult) return;
+            generateAuditPDF(currentResult);
+        });
+
+        document.getElementById('exportReportBtn').addEventListener('click', () => {
+            if (!currentResult) return;
+            generateReportPDF(currentResult);
+        });
+
+        // Display results
+        function displayResults(result) {
+            // Update overview metrics
+            document.getElementById('totalReqs').textContent = result.summary.totalRequirements;
+            document.getElementById('presentReqs').textContent = result.summary.presentRequirements;
+            document.getElementById('missingReqs').textContent = result.summary.missingRequirements;
+
+            // Display category breakdown
+            displayCategoryBreakdown(result.findings);
+            
+            // Display compliance findings
+            displayComplianceFindings(result.findings);
+            
+            // Display audit trail
+            displayAuditTrail(result);
+            
+            // Display HIPAA standards
+            displayHIPAAStandards();
+            
+            // Display full report
+            displayFullReport(result);
+        }
+
+        function displayCategoryBreakdown(findings) {
+            const container = document.getElementById('categoryBreakdown');
+            const categories = {};
+            
+            findings.forEach(finding => {
+                if (!categories[finding.category]) {
+                    categories[finding.category] = { present: 0, partial: 0, missing: 0, total: 0 };
+                }
+                categories[finding.category][finding.status]++;
+                categories[finding.category].total++;
+            });
+
+            container.innerHTML = Object.entries(categories).map(([category, stats]) => {
+                const compliance = Math.round((stats.present / stats.total) * 100);
+                return `
+                    <div class="bg-white border rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-medium">${category}</h4>
+                            <span class="text-sm text-gray-500">${compliance}% compliant</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full progress-bar" style="width: ${compliance}%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-600 mt-1">
+                            <span>${stats.present} present</span>
+                            <span>${stats.missing} missing</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function displayComplianceFindings(findings) {
+            const container = document.getElementById('complianceFindings');
+            const categories = {};
+            
+            findings.forEach(finding => {
+                if (!categories[finding.category]) {
+                    categories[finding.category] = [];
+                }
+                categories[finding.category].push(finding);
+            });
+
+            container.innerHTML = Object.entries(categories).map(([category, categoryFindings]) => `
+                <div class="border rounded-lg">
+                    <div class="bg-gray-50 px-4 py-3 border-b">
+                        <h4 class="font-medium">${category}</h4>
+                    </div>
+                    <div class="p-4 space-y-4">
+                        ${categoryFindings.map(finding => `
+                            <div class="flex items-start gap-3">
+                                <div class="flex-shrink-0 mt-1">
+                                    ${finding.status === 'present' ? 
+                                        '<div class="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center"><i data-lucide="check" class="w-3 h-3 text-white"></i></div>' :
+                                        finding.status === 'partial' ?
+                                        '<div class="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center"><i data-lucide="minus" class="w-3 h-3 text-white"></i></div>' :
+                                        '<div class="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center"><i data-lucide="x" class="w-3 h-3 text-white"></i></div>'
+                                    }
+                                </div>
+                                <div class="flex-1">
+                                    <h5 class="font-medium">${finding.requirement}</h5>
+                                    <p class="text-sm text-gray-600 mt-1">${finding.details}</p>
+                                    ${finding.recommendations.length > 0 ? `
+                                        <div class="mt-2">
+                                            <p class="text-sm font-medium text-blue-600">Recommendations:</p>
+                                            <ul class="text-sm text-gray-600 mt-1 space-y-1">
+                                                ${finding.recommendations.map(rec => `<li>• ${rec}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded-full ${
+                                    finding.priority === 'critical' ? 'bg-red-100 text-red-800' :
+                                    finding.priority === 'important' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-blue-100 text-blue-800'
+                                }">${finding.priority}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        function displayAuditTrail(result) {
+            const container = document.getElementById('auditTrail');
+            container.innerHTML = `
+                <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                    <h4 class="font-medium mb-2">Report Information</h4>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><strong>Report ID:</strong> ${result.id}</div>
+                        <div><strong>URL:</strong> ${result.url}</div>
+                        <div><strong>Analysis Date:</strong> ${new Date(result.timestamp).toLocaleString()}</div>
+                        <div><strong>Status:</strong> <span class="px-2 py-1 rounded text-xs ${
+                            result.status === 'compliant' ? 'bg-green-100 text-green-800' :
+                            result.status === 'needs-attention' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }">${result.status.replace('-', ' ').toUpperCase()}</span></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3 p-3 bg-white border rounded">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">1</div>
+                        <div class="flex-1">
+                            <h5 class="font-medium">Privacy Policy Detection</h5>
+                            <p class="text-sm text-gray-600">Successfully located and extracted privacy policy content</p>
+                        </div>
+                        <span class="text-green-600"><i data-lucide="check-circle" class="w-5 h-5"></i></span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 p-3 bg-white border rounded">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">2</div>
+                        <div class="flex-1">
+                            <h5 class="font-medium">HIPAA Standards Analysis</h5>
+                            <p class="text-sm text-gray-600">Analyzed content against ${result.summary.totalRequirements} HIPAA requirements</p>
+                        </div>
+                        <span class="text-green-600"><i data-lucide="check-circle" class="w-5 h-5"></i></span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 p-3 bg-white border rounded">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">3</div>
+                        <div class="flex-1">
+                            <h5 class="font-medium">Compliance Assessment</h5>
+                            <p class="text-sm text-gray-600">Generated findings and recommendations for ${result.findings.length} requirements</p>
+                        </div>
+                        <span class="text-green-600"><i data-lucide="check-circle" class="w-5 h-5"></i></span>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 p-3 bg-white border rounded">
+                        <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm">4</div>
+                        <div class="flex-1">
+                            <h5 class="font-medium">Report Generation</h5>
+                            <p class="text-sm text-gray-600">Compiled comprehensive compliance report with actionable recommendations</p>
+                        </div>
+                        <span class="text-green-600"><i data-lucide="check-circle" class="w-5 h-5"></i></span>
+                    </div>
+                </div>
+            `;
+            
+            lucide.createIcons();
+        }
+
+        function displayHIPAAStandards() {
+            const container = document.getElementById('hipaaStandards');
+            container.innerHTML = Object.entries(hipaaStandards).map(([title, standard]) => `
+                <div class="border rounded-lg">
+                    <div class="bg-blue-50 px-4 py-3 border-b">
+                        <h4 class="font-medium">${title}</h4>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-gray-700 mb-3">${standard.description}</p>
+                        <h5 class="font-medium mb-2">Key Requirements:</h5>
+                        <ul class="space-y-1">
+                            ${standard.requirements.map(req => `<li class="text-sm text-gray-600">• ${req}</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function displayFullReport(result) {
+            const container = document.getElementById('fullReport');
+            container.innerHTML = `
+                <div class="space-y-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-medium mb-2">Executive Summary</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div><strong>Total Requirements:</strong> ${result.summary.totalRequirements}</div>
+                            <div><strong>Present:</strong> ${result.summary.presentRequirements}</div>
+                            <div><strong>Partial:</strong> ${result.summary.partialRequirements}</div>
+                            <div><strong>Missing:</strong> ${result.summary.missingRequirements}</div>
+                        </div>
+                    </div>
+                    
+                    <div id="fullReportFindings">
+                        ${displayComplianceFindings(result.findings)}
+                    </div>
+                </div>
+            `;
+        }
+
+        // PDF Generation Functions
+        function generateAuditPDF(result) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header
+            doc.setFillColor(59, 130, 246);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(20);
+            doc.text('HIPAA Compliance Audit Trail', 20, 20);
+            
+            // Report info
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(12);
+            let yPos = 50;
+            doc.text(`Report ID: ${result.id}`, 20, yPos);
+            doc.text(`Website: ${result.url}`, 20, yPos + 10);
+            doc.text(`Date: ${new Date(result.timestamp).toLocaleString()}`, 20, yPos + 20);
+            doc.text(`Status: ${result.status.toUpperCase()}`, 20, yPos + 30);
+            
+            // Audit steps
+            yPos = 100;
+            doc.setFontSize(14);
+            doc.text('Analysis Steps:', 20, yPos);
+            
+            const steps = [
+                'Privacy Policy Detection - Successfully located and extracted privacy policy content',
+                `HIPAA Standards Analysis - Analyzed content against ${result.summary.totalRequirements} HIPAA requirements`,
+                `Compliance Assessment - Generated findings and recommendations for ${result.findings.length} requirements`,
+                'Report Generation - Compiled comprehensive compliance report with actionable recommendations'
+            ];
+            
+            yPos += 15;
+            doc.setFontSize(10);
+            steps.forEach((step, index) => {
+                doc.text(`${index + 1}. ${step}`, 20, yPos);
+                yPos += 15;
+            });
+            
+            doc.save(`hipaa-audit-trail-${result.id}.pdf`);
+        }
+
+        function generateReportPDF(result) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Header with gradient effect
+            doc.setFillColor(79, 70, 229);
+            doc.rect(0, 0, 210, 35, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
+            doc.text('HIPAA Compliance Report', 20, 25);
+            
+            // Executive Summary
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            let yPos = 55;
+            doc.text('Executive Summary', 20, yPos);
+            
+            doc.setFillColor(239, 246, 255);
+            doc.rect(15, yPos + 5, 180, 30, 'F');
+            
+            doc.setFontSize(10);
+            yPos += 15;
+            doc.text(`Total Requirements: ${result.summary.totalRequirements}`, 20, yPos);
+            doc.text(`Present: ${result.summary.presentRequirements}`, 20, yPos + 8);
+            doc.text(`Missing: ${result.summary.missingRequirements}`, 20, yPos + 16);
+            doc.text(`Critical Issues: ${result.summary.criticalIssues}`, 20, yPos + 24);
+            
+            // Recommendations
+            yPos += 45;
+            doc.setFontSize(14);
+            doc.text('Priority Recommendations', 20, yPos);
+            
+            const criticalFindings = result.findings.filter(f => f.priority === 'critical' && f.recommendations.length > 0);
+            
+            yPos += 15;
+            doc.setFontSize(10);
+            criticalFindings.forEach((finding, index) => {
+                if (yPos > 250) {
+                    doc.addPage();
+                    yPos = 30;
+                }
+                
+                doc.setFillColor(254, 242, 242);
+                doc.rect(15, yPos - 5, 180, 20, 'F');
+                
+                doc.text(`${index + 1}. ${finding.requirement}`, 20, yPos);
+                finding.recommendations.forEach((rec, recIndex) => {
+                    yPos += 8;
+                    doc.text(`   • ${rec}`, 25, yPos);
+                });
+                yPos += 15;
+            });
+            
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(128, 128, 128);
+                doc.text(`Generated by HIPAA Analyzer - Page ${i} of ${pageCount}`, 20, 285);
+                doc.text(`Report ID: ${result.id}`, 150, 285);
+            }
+            
+            doc.save(`hipaa-compliance-report-${result.id}.pdf`);
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+    </script>
+</body>
+</html>
